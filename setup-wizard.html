@@ -1,0 +1,440 @@
+<title>GHO Expenses Setup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f3f2ee;
+    --surface: #ffffff;
+    --surface-2: #eae7de;
+    --text: #1c211e;
+    --text-dim: #5b6560;
+    --accent: #2f6f5e;
+    --accent-soft: #e2ede9;
+    --warn: #c97c3d;
+    --warn-soft: #f7e9db;
+    --border: #ddd8cc;
+    --shadow: 0 1px 2px rgba(28,33,30,0.06), 0 8px 24px rgba(28,33,30,0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141815; --surface: #1d2320; --surface-2: #262d28;
+      --text: #ece9e2; --text-dim: #9aa39d; --accent: #64c2a2;
+      --accent-soft: #1f332c; --warn: #e2a15c; --warn-soft: #3a2e1e;
+      --border: #333b35; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141815; --surface: #1d2320; --surface-2: #262d28;
+    --text: #ece9e2; --text-dim: #9aa39d; --accent: #64c2a2;
+    --accent-soft: #1f332c; --warn: #e2a15c; --warn-soft: #3a2e1e;
+    --border: #333b35; --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    padding-inline: 20px;
+    padding-block: 32px 64px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  .eyebrow {
+    font: 600 12px/1 'IBM Plex Mono', monospace;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent);
+  }
+  h1 {
+    font-family: 'Fraunces', Georgia, serif; font-weight: 600;
+    font-size: clamp(28px, 5vw, 38px); line-height: 1.08;
+    margin: 8px 0 12px; text-wrap: balance;
+  }
+  .lede { color: var(--text-dim); font-size: 15.5px; line-height: 1.6; margin: 0 0 8px; max-width: 56ch; }
+  .lede b { color: var(--text); font-weight: 600; }
+
+  .rail {
+    display: flex; gap: 6px; margin: 26px 0 32px; padding: 0; list-style: none;
+  }
+  .rail li {
+    flex: 1; height: 5px; border-radius: 3px; background: var(--surface-2);
+    transition: background .2s ease;
+  }
+  .rail li.done { background: var(--accent); }
+
+  .step {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px 22px 24px; margin-bottom: 18px; box-shadow: var(--shadow);
+  }
+  .step-head { display: flex; gap: 14px; align-items: flex-start; }
+  .step-num {
+    flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent);
+    font: 700 14px 'IBM Plex Mono', monospace;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .step.is-done .step-num { background: var(--accent); color: #fff; }
+  .step-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 19px; margin: 0 0 3px; }
+  .step.is-done .step-title { text-decoration: line-through; text-decoration-color: var(--text-dim); opacity: .6; }
+  .step-why { color: var(--text-dim); font-size: 13px; line-height: 1.5; margin: 0; }
+  .step-body { margin-top: 16px; padding-left: 44px; }
+  .step-body ol, .step-body ul { margin: 0 0 14px; padding-left: 20px; color: var(--text); font-size: 14px; line-height: 1.65; }
+  .step-body ol li, .step-body ul li { margin-bottom: 4px; }
+  .step-body p.note { color: var(--text-dim); font-size: 13px; line-height: 1.55; margin: 10px 0 0; }
+  .step-body p.note.warn { color: var(--warn); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    font: 600 14px 'IBM Plex Sans', sans-serif;
+    padding: 11px 18px; border-radius: 11px; border: none; cursor: pointer;
+    text-decoration: none; box-shadow: var(--shadow);
+  }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.secondary { background: var(--surface-2); color: var(--text); }
+  .btn.big { padding: 15px 22px; font-size: 15.5px; width: 100%; justify-content: center; }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .field-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 4px 0 12px; }
+  .field {
+    display: flex; flex-direction: column; gap: 5px; flex: 1 1 200px;
+  }
+  .field label { font: 600 11px 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dim); }
+  .field input {
+    font: 500 13.5px 'IBM Plex Mono', monospace; padding: 10px 12px;
+    border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--text);
+    width: 100%;
+  }
+  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .value-box {
+    display: flex; align-items: center; gap: 8px; margin: 4px 0 12px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px;
+    padding: 9px 10px 9px 12px;
+  }
+  .value-box input {
+    flex: 1; border: none; background: transparent; font: 500 13.5px 'IBM Plex Mono', monospace; color: var(--text);
+    min-width: 0;
+  }
+  .value-box input:focus-visible { outline: none; }
+  .copy-btn {
+    flex-shrink: 0; border: none; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 7px; padding: 6px 10px; font: 600 11.5px 'IBM Plex Sans', sans-serif; color: var(--text); cursor: pointer;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .grid-2 { grid-template-columns: 1fr; } }
+  .mini-card {
+    border: 1px solid var(--border); border-radius: 12px; padding: 14px; background: var(--surface-2);
+  }
+  .mini-card h4 { font-family: 'Fraunces', serif; font-size: 15px; margin: 0 0 4px; }
+  .mini-card p { color: var(--text-dim); font-size: 12.5px; margin: 0 0 10px; line-height: 1.5; }
+
+  .env-list {
+    font: 500 12.5px 'IBM Plex Mono', monospace; color: var(--text-dim);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; margin: 4px 0 14px; line-height: 1.9; overflow-x: auto;
+  }
+  .env-list b { color: var(--text); font-weight: 600; }
+
+  .done-check { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+  .done-check input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .done-check label { font: 500 12.5px 'IBM Plex Sans', sans-serif; color: var(--text-dim); cursor: pointer; }
+
+  .result-msg {
+    margin-top: 10px; font: 500 13px 'IBM Plex Mono', monospace; padding: 9px 12px;
+    border-radius: 8px; background: var(--accent-soft); color: var(--accent); display: none;
+  }
+  .result-msg.show { display: block; }
+
+  .final-links { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+
+  footer { text-align: center; color: var(--text-dim); font-size: 12px; margin-top: 30px; }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">GHO Expenses · One-time setup</div>
+  <h1>Get your tracker live</h1>
+  <p class="lede">One link, six short stops. At each one you sign into <b>your own</b> account on that service — nothing here ever asks for a password, and nothing you type is sent to us. By the end you'll have a working link for your team.</p>
+
+  <ul class="rail" id="rail">
+    <li></li><li></li><li></li><li></li><li></li><li></li>
+  </ul>
+
+  <!-- STEP 1 -->
+  <div class="step" data-step="1">
+    <div class="step-head">
+      <div class="step-num">1</div>
+      <div>
+        <p class="step-title">Create your database</p>
+        <p class="step-why">This is where every expense, project, and photo gets stored. Free to start, no card needed.</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <a class="btn primary" href="https://database.new" target="_blank" rel="noopener">Create free database ↗</a>
+      <ol style="margin-top:16px">
+        <li>Sign in with Google or email, name the project anything, set a database password — <b>write it down</b>, you'll use it in a moment.</li>
+        <li>Pick the region closest to you and click Create. Takes about 2 minutes.</li>
+        <li>Once it's ready: left sidebar → <b>Storage</b> → New bucket → name it exactly <code>receipts</code> → turn on <b>Public bucket</b> → Create.</li>
+        <li>Left sidebar → <b>Project Settings → API</b>. Keep this tab open — you'll copy three boxes from here in step 4: <b>Project URL</b>, <b>anon public</b> key, and <b>service_role</b> key.</li>
+        <li>Left sidebar → <b>Project Settings → Database → Connection string → URI</b>. Copy it and replace <code>[YOUR-PASSWORD]</code> in it with the password from step 1.</li>
+      </ol>
+      <div class="done-check">
+        <input type="checkbox" id="done-1"><label for="done-1">I've done this</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div class="step" data-step="2">
+    <div class="step-head">
+      <div class="step-num">2</div>
+      <div>
+        <p class="step-title">Create your Telegram bot</p>
+        <p class="step-why">This is the bot your team will send voice notes, photos, and texts to.</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <a class="btn primary" href="https://t.me/BotFather" target="_blank" rel="noopener">Open BotFather in Telegram ↗</a>
+      <ol style="margin-top:16px">
+        <li>Send <code>/newbot</code>, give it any display name, then a username that ends in <code>bot</code> (e.g. <code>my_expenses_bot</code>).</li>
+        <li>BotFather replies with a long token like <code>123456:ABC-...</code> — copy it, you'll need it twice below.</li>
+      </ol>
+      <div class="field">
+        <label for="secret-gen">Now make up a secret phrase</label>
+        <div class="value-box">
+          <input id="secret-gen" type="text" placeholder="click Generate →" readonly>
+          <button class="copy-btn" type="button" onclick="genSecret()">Generate</button>
+          <button class="copy-btn" type="button" onclick="copyField('secret-gen')">Copy</button>
+        </div>
+      </div>
+      <p class="note">This is just a made-up password that stops strangers from pretending to be Telegram. Save it — you'll paste it in step 4 and step 5.</p>
+      <div class="done-check">
+        <input type="checkbox" id="done-2"><label for="done-2">I've done this</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div class="step" data-step="3">
+    <div class="step-head">
+      <div class="step-num">3</div>
+      <div>
+        <p class="step-title">Get your two AI keys</p>
+        <p class="step-why">One reads voice notes, the other reads receipt photos and sorts expenses into categories.</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="grid-2">
+        <div class="mini-card">
+          <h4>Groq</h4>
+          <p>Turns voice notes into text. Free tier is generous, no card needed.</p>
+          <a class="btn secondary" href="https://console.groq.com/keys" target="_blank" rel="noopener">Get free key ↗</a>
+        </div>
+        <div class="mini-card">
+          <h4>OpenRouter</h4>
+          <p>Reads receipt photos and picks a category. Sign in, create a key.</p>
+          <a class="btn secondary" href="https://openrouter.ai/keys" target="_blank" rel="noopener">Get key ↗</a>
+        </div>
+      </div>
+      <p class="note warn">OpenRouter needs a small top-up to actually work — after making the key, go to Settings → Credits and add about $5. That's the only step in this whole setup that costs real money, and it should last months.</p>
+      <p class="note">Once you have both keys copied somewhere, you're ready for step 4.</p>
+      <div class="done-check">
+        <input type="checkbox" id="done-3"><label for="done-3">I've done this</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 -->
+  <div class="step" data-step="4">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div>
+        <p class="step-title">Deploy the app</p>
+        <p class="step-why">This puts the tracker on the internet, on Vercel's free plan.</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <a class="btn primary big" id="deployBtn" href="#" target="_blank" rel="noopener">Deploy to Vercel ↗</a>
+      <ol style="margin-top:16px">
+        <li>Sign in to Vercel (Google, GitHub, or email — this is just to prove it's you; you won't see or need to touch any code).</li>
+        <li>It'll show a row of boxes to fill in. Paste in the values you collected in steps 1–3. Here's what each one is:</li>
+      </ol>
+      <div class="env-list">
+        <b>DATABASE_URL</b> → the connection string, step 1.5<br>
+        <b>NEXT_PUBLIC_SUPABASE_URL</b> and <b>SUPABASE_URL</b> → same value, Project URL, step 1.4<br>
+        <b>NEXT_PUBLIC_SUPABASE_ANON_KEY</b> → anon public key, step 1.4<br>
+        <b>SUPABASE_SERVICE_ROLE_KEY</b> → service_role key, step 1.4<br>
+        <b>SUPABASE_RECEIPTS_BUCKET</b> → leave as <b>receipts</b><br>
+        <b>TELEGRAM_BOT_TOKEN</b> → from BotFather, step 2<br>
+        <b>TELEGRAM_WEBHOOK_SECRET</b> → your secret phrase, step 2<br>
+        <b>ADMIN_TELEGRAM_IDS</b> → leave blank<br>
+        <b>GROQ_API_KEY</b> → from Groq, step 3<br>
+        <b>OPENROUTER_API_KEY</b> → from OpenRouter, step 3<br>
+        <b>OPENROUTER_TEXT_MODEL</b> / <b>OPENROUTER_VISION_MODEL</b> → leave as filled in<br>
+        <b>MONTHLY_AI_BUDGET_USD</b> → leave as <b>5</b> (raise it later if you need to)
+      </div>
+      <p class="note">Click Deploy. It takes 1–2 minutes and sets up the database tables by itself — nothing else to run anywhere. You'll get a link like <code>https://your-app.vercel.app</code> — save it, you need it next.</p>
+      <div class="done-check">
+        <input type="checkbox" id="done-4"><label for="done-4">I've done this</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 5 -->
+  <div class="step" data-step="5">
+    <div class="step-head">
+      <div class="step-num">5</div>
+      <div>
+        <p class="step-title">Connect your bot to your app</p>
+        <p class="step-why">One click links the two together. This runs in your own browser — nothing is sent anywhere except to Telegram.</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="field-row">
+        <div class="field">
+          <label for="cbToken">Bot token (step 2)</label>
+          <input id="cbToken" type="text" placeholder="123456:ABC-...">
+        </div>
+        <div class="field">
+          <label for="cbSecret">Secret phrase (step 2)</label>
+          <input id="cbSecret" type="text" placeholder="paste it here">
+        </div>
+        <div class="field">
+          <label for="cbAppUrl">Your app link (step 4)</label>
+          <input id="cbAppUrl" type="text" placeholder="your-app.vercel.app">
+        </div>
+      </div>
+      <button class="btn primary" type="button" onclick="connectBot()">Connect →</button>
+      <p class="note">A new tab opens showing something like <code>{"ok":true,...}</code> — that means it worked. If it shows an error instead, double-check the three boxes above.</p>
+      <div id="cbResult" class="result-msg"></div>
+      <div class="done-check">
+        <input type="checkbox" id="done-5"><label for="done-5">I've done this</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 6 -->
+  <div class="step" data-step="6">
+    <div class="step-head">
+      <div class="step-num">6</div>
+      <div>
+        <p class="step-title">You're live</p>
+        <p class="step-why">Two links your team will actually use day to day.</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <ol>
+        <li>Open Telegram, message your bot <code>/start</code>, then try something like <code>450 diesel</code>. <b>Do this yourself first</b> — the first person to message the bot becomes the admin.</li>
+        <li>Share the capture link below with anyone who doesn't use Telegram — it works in any phone browser, no account needed.</li>
+      </ol>
+      <div class="final-links">
+        <a class="btn secondary" id="loginLink" href="#" target="_blank" rel="noopener">Open your dashboard (sign in with email) ↗</a>
+        <a class="btn secondary" id="captureLink" href="#" target="_blank" rel="noopener">Open the capture page ↗</a>
+      </div>
+      <p class="note">In the dashboard's <b>Team</b> tab, approve anyone new before their entries count — this stops a shared link from quietly polluting your books.</p>
+    </div>
+  </div>
+
+  <footer>Nothing you type on this page is stored or sent anywhere except directly to the service you're signing into.</footer>
+</div>
+
+<script>
+  const REPO_URL = 'https://github.com/PLACEHOLDER/gho-expenses'; // set once the source repo exists
+  const ENV_VARS = [
+    'DATABASE_URL','NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_URL',
+    'SUPABASE_SERVICE_ROLE_KEY','SUPABASE_RECEIPTS_BUCKET','TELEGRAM_BOT_TOKEN','TELEGRAM_WEBHOOK_SECRET',
+    'ADMIN_TELEGRAM_IDS','GROQ_API_KEY','OPENROUTER_API_KEY','OPENROUTER_TEXT_MODEL','OPENROUTER_VISION_MODEL',
+    'MONTHLY_AI_BUDGET_USD'
+  ];
+  const ENV_DEFAULTS = {
+    SUPABASE_RECEIPTS_BUCKET: 'receipts',
+    OPENROUTER_TEXT_MODEL: 'deepseek/deepseek-chat',
+    OPENROUTER_VISION_MODEL: 'qwen/qwen-2.5-vl-72b-instruct',
+    MONTHLY_AI_BUDGET_USD: '5'
+  };
+
+  function buildDeployUrl() {
+    const p = new URLSearchParams();
+    p.set('repository-url', REPO_URL);
+    p.set('env', ENV_VARS.join(','));
+    p.set('envDescription', 'Paste the values you copied from Supabase, Telegram, Groq and OpenRouter in the steps above this button.');
+    p.set('envLink', location.href.split('#')[0]);
+    p.set('envDefaults', JSON.stringify(ENV_DEFAULTS));
+    p.set('project-name', 'gho-expenses');
+    return 'https://vercel.com/new/clone?' + p.toString();
+  }
+
+  document.getElementById('deployBtn').href = buildDeployUrl();
+
+  function genSecret() {
+    const bytes = new Uint8Array(18);
+    crypto.getRandomValues(bytes);
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    document.getElementById('secret-gen').value = hex;
+    document.getElementById('cbSecret').value = hex;
+  }
+
+  function copyField(id) {
+    const el = document.getElementById(id);
+    el.select();
+    try { navigator.clipboard.writeText(el.value); } catch (e) { document.execCommand('copy'); }
+  }
+
+  function normalizeUrl(raw) {
+    let u = raw.trim().replace(/\/+$/, '');
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    return u;
+  }
+
+  function connectBot() {
+    const token = document.getElementById('cbToken').value.trim();
+    const secret = document.getElementById('cbSecret').value.trim();
+    const rawUrl = document.getElementById('cbAppUrl').value.trim();
+    const resultEl = document.getElementById('cbResult');
+    if (!token || !secret || !rawUrl) {
+      resultEl.textContent = 'Fill in all three boxes first.';
+      resultEl.classList.add('show');
+      return;
+    }
+    const appUrl = normalizeUrl(rawUrl);
+    const hookUrl = 'https://api.telegram.org/bot' + encodeURIComponent(token) +
+      '/setWebhook?url=' + encodeURIComponent(appUrl + '/api/telegram') +
+      '&secret_token=' + encodeURIComponent(secret);
+    window.open(hookUrl, '_blank', 'noopener');
+    document.getElementById('loginLink').href = appUrl + '/login';
+    document.getElementById('captureLink').href = appUrl + '/capture';
+    resultEl.textContent = 'Opened a new tab — check it says "ok":true.';
+    resultEl.classList.add('show');
+  }
+
+  document.getElementById('cbAppUrl').addEventListener('input', function () {
+    if (!this.value.trim()) return;
+    const appUrl = normalizeUrl(this.value);
+    document.getElementById('loginLink').href = appUrl + '/login';
+    document.getElementById('captureLink').href = appUrl + '/capture';
+  });
+
+  // per-viewer convenience only: remember which steps were checked off in this browser
+  (function () {
+    const rail = document.getElementById('rail').children;
+    function refreshRail() {
+      for (let i = 1; i <= 6; i++) {
+        const done = document.getElementById('done-' + i).checked;
+        document.querySelector('.step[data-step="' + i + '"]').classList.toggle('is-done', done);
+        rail[i - 1].classList.toggle('done', done);
+      }
+    }
+    for (let i = 1; i <= 6; i++) {
+      const box = document.getElementById('done-' + i);
+      try {
+        const saved = localStorage.getItem('gho-setup-done-' + i);
+        if (saved === '1') box.checked = true;
+      } catch (e) {}
+      box.addEventListener('change', function () {
+        try { localStorage.setItem('gho-setup-done-' + i, box.checked ? '1' : '0'); } catch (e) {}
+        refreshRail();
+      });
+    }
+    refreshRail();
+  })();
+</script>

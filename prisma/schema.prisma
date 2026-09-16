@@ -1,0 +1,150 @@
+// GHO Expense Tracker — database schema
+// Runs on Supabase Postgres (free tier: https://supabase.com) — also gives us
+// Storage (receipt/voice file retention) and Auth (dashboard login) from the
+// same project, so there's only one account to set up.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MemberStatus {
+  pending // messaged the bot/capture page but not yet approved by an admin
+  approved
+  blocked
+}
+
+// A person who is allowed to submit expenses (you, staff, family, distributors).
+// Linked to whichever channel they use — Telegram chat id, phone number, email.
+model TeamMember {
+  id               String       @id @default(cuid())
+  name             String
+  telegramId       String?      @unique // Telegram numeric chat id
+  phone            String?      @unique // e.g. +919345443333 (used for SMS + WhatsApp later)
+  email            String?      @unique
+  pin              String? // optional 4-digit PIN used inside Telegram/web capture to identify a shared device
+  status           MemberStatus @default(pending)
+  isAdmin          Boolean      @default(false) // admins can approve members, set budgets, see everything
+  currentProjectId String? // "sticky" project context — what /project set most recently; null = General
+  currentProject   Project?     @relation("CurrentProjectFor", fields: [currentProjectId], references: [id])
+  active           Boolean      @default(true)
+  createdAt        DateTime     @default(now())
+  expenses         Expense[]
+  activityLogs     ActivityLog[]
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String? // helps the AI classifier know what belongs here
+  isDefault   Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  expenses    Expense[]
+}
+
+enum ProjectStatus {
+  active
+  completed
+  onHold
+}
+
+// A client job/site — e.g. "NABARD Roof Coating". Expenses and day-to-day
+// activity (labor, area covered) can be tagged to one of these, or left
+// general/overhead if no project applies.
+model Project {
+  id           String        @id @default(cuid())
+  name         String
+  client       String?
+  location     String? // primary site address/area
+  status       ProjectStatus @default(active)
+  startDate    DateTime      @default(now())
+  endDate      DateTime?
+  createdAt    DateTime      @default(now())
+  expenses     Expense[]
+  activityLogs ActivityLog[]
+  stickyFor    TeamMember[]  @relation("CurrentProjectFor")
+}
+
+// One day's (or one crew's) work entry on a project: headcount + wage,
+// what was done, and area covered. Kept separate from Expense so "how much
+// have we coated so far" doesn't require summing money. A labor cost here
+// still creates a linked Expense (category Staff/Labour) automatically.
+// Not unique per day — a project can have several entries on the same date
+// when different crews work different parts of a site.
+model ActivityLog {
+  id            String      @id @default(cuid())
+  projectId     String
+  project       Project     @relation(fields: [projectId], references: [id])
+  date          DateTime    @default(now())
+  location      String? // where on the site (e.g. "Terrace", "Compound / Block A")
+  laborCount    Int?
+  wagePerHead   Float?
+  description   String? // what was done
+  areaCoveredSqft Float?
+  teamMemberId  String?
+  teamMember    TeamMember? @relation(fields: [teamMemberId], references: [id])
+  expenseId     String?     @unique // the auto-created Staff/Labour expense, if wage was given
+  expense       Expense?    @relation(fields: [expenseId], references: [id])
+  rawCaptureId  String?     @unique // the original voice note/photo this entry was extracted from, for audit
+  rawCapture    RawCapture? @relation(fields: [rawCaptureId], references: [id])
+  createdAt     DateTime    @default(now())
+}
+
+// One inbound message before/while it is being processed by the AI pipeline.
+// mediaUrl points at the original file kept in Supabase Storage (receipts/voice
+// notes are retained for accounting/audit purposes, not just their extracted text).
+model RawCapture {
+  id           String   @id @default(cuid())
+  channel      String // "telegram" | "web" | "email" | "sms"
+  kind         String // "voice" | "photo" | "text"
+  rawText      String? // transcription / OCR text / typed text
+  mediaUrl     String? // Supabase Storage URL for the original photo/voice file
+  sourceRef    String? // telegram file_id, or similar, for debugging only
+  teamMemberId String?
+  processedOk  Boolean  @default(false)
+  errorMsg     String?
+  createdAt    DateTime @default(now())
+  expense      Expense?
+  activityLog  ActivityLog?
+}
+
+model Expense {
+  id             String       @id @default(cuid())
+  amount         Float
+  currency       String       @default("INR")
+  vendor         String?
+  note           String?
+  date           DateTime     @default(now())
+  categoryId     String?
+  category       Category?    @relation(fields: [categoryId], references: [id])
+  projectId      String? // null = General/overhead
+  project        Project?     @relation(fields: [projectId], references: [id])
+  teamMemberId   String?
+  teamMember     TeamMember?  @relation(fields: [teamMemberId], references: [id])
+  channel        String // "telegram" | "web" | "email" | "sms" | "system" (auto-generated, e.g. labor cost)
+  confidence     Float        @default(0) // 0-1, how sure the AI was about amount+category
+  needsReview    Boolean      @default(false)
+  duplicateOfId  String? // set if this looks like a repeat of an earlier expense
+  duplicateOf    Expense?     @relation("DuplicateChain", fields: [duplicateOfId], references: [id])
+  duplicatesOfMe Expense[]    @relation("DuplicateChain")
+  rawCaptureId   String?      @unique
+  rawCapture     RawCapture?  @relation(fields: [rawCaptureId], references: [id])
+  activityLog    ActivityLog?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// Rough per-call AI cost tracking so a runaway loop or spam can't silently
+// rack up a bill. Costs are estimates (based on typical per-request pricing
+// for the configured models), not exact provider billing.
+model AiUsageLog {
+  id          String   @id @default(cuid())
+  provider    String // "groq" | "openrouter"
+  purpose     String // "transcribe" | "ocr" | "categorize"
+  estCostUsd  Float
+  createdAt   DateTime @default(now())
+}

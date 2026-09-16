@@ -1,0 +1,24 @@
+{
+  "name": "GHO Expenses",
+  "short_name": "GHO Expenses",
+  "description": "Log business expenses by camera, voice, or text — and track project labor & area covered.",
+  "start_url": "/capture",
+  "display": "standalone",
+  "background_color": "#f3f2ee",
+  "theme_color": "#2f6f5e",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "192x192 512x512", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "share_target": {
+    "action": "/capture",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "files": [
+        { "name": "shared_file", "accept": ["image/*"] }
+      ]
+    }
+  }
+}
