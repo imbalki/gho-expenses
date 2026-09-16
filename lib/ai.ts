@@ -1,24 +1,23 @@
 // AI pipeline: voice transcription -> receipt OCR -> structured extraction
 // (expenses AND/OR a day's project activity — labor, work done, area covered).
 //
-// Providers used (both have generous free/cheap tiers and are OpenAI-compatible,
-// matching the "cheaper open-source models" choice):
-//   - GROQ_API_KEY        -> Whisper (large-v3-turbo) for voice transcription
-//   - OPENROUTER_API_KEY  -> vision model for receipt OCR + text model for extraction
+// Everything runs through a single provider, OpenRouter — one API key, one
+// account, one place to pick/swap models:
+//   - OPENROUTER_API_KEY         -> voice transcription + vision OCR + text extraction
 //
 // You can swap models any time via the env vars below without touching this file.
 
-const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 const TEXT_MODEL = process.env.OPENROUTER_TEXT_MODEL || 'deepseek/deepseek-chat';
 const VISION_MODEL = process.env.OPENROUTER_VISION_MODEL || 'qwen/qwen-2.5-vl-72b-instruct';
+const TRANSCRIBE_MODEL = process.env.OPENROUTER_TRANSCRIBE_MODEL || 'openai/whisper-large-v3-turbo';
 
 // Rough, deliberately conservative per-call cost estimates in USD — used only
 // to catch a runaway budget, NOT a substitute for checking your real provider
 // invoices. See lib/cost.ts.
 export const COST_ESTIMATES = {
-  transcribe: 0.0006, // Groq whisper-large-v3-turbo, ~30s average clip
+  transcribe: 0.001, // OpenRouter whisper-large-v3-turbo, ~30s average clip
   ocr: 0.002, // vision model call, image tokens are the bulk of the cost
   extract: 0.0008, // small/cheap text model call
 };
@@ -51,22 +50,22 @@ export type ExtractionResult = {
   projectMention: string | null; // matches one of the provided project names, if explicitly mentioned
 };
 
-/** Transcribe a voice note (ogg/opus/mp3/m4a) to text using Groq's hosted Whisper. */
+/** Transcribe a voice note (ogg/opus/mp3/m4a/webm) to text using OpenRouter's audio transcription API. */
 export async function transcribeAudio(buffer: Buffer, filename: string): Promise<string> {
-  if (!GROQ_API_KEY) {
+  if (!OPENROUTER_API_KEY) {
     throw new Error(
-      'GROQ_API_KEY is not set. Get a free key at https://console.groq.com/keys and add it to your environment variables.'
+      'OPENROUTER_API_KEY is not set. Get a key at https://openrouter.ai/keys and add it to your environment variables.'
     );
   }
 
   const form = new FormData();
   form.append('file', new Blob([new Uint8Array(buffer)]), filename);
-  form.append('model', 'whisper-large-v3-turbo');
+  form.append('model', TRANSCRIBE_MODEL);
   form.append('response_format', 'text');
 
-  const res = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+  const res = await fetch('https://openrouter.ai/api/v1/audio/transcriptions', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+    headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}` },
     body: form,
   });
 
@@ -75,7 +74,16 @@ export async function transcribeAudio(buffer: Buffer, filename: string): Promise
     throw new Error(`Transcription failed (${res.status}): ${errText}`);
   }
 
-  return (await res.text()).trim();
+  const raw = await res.text();
+  // response_format=text usually returns plain text, but some providers behind
+  // OpenRouter still wrap it as JSON ({"text": "..."}) — handle both.
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed?.text === 'string') return parsed.text.trim();
+  } catch {
+    // not JSON — fall through to plain text
+  }
+  return raw.trim();
 }
 
 /** Run OCR + read a receipt image, returning raw text found on it. */

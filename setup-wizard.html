@@ -66,6 +66,7 @@
     background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
     padding: 22px 22px 24px; margin-bottom: 18px; box-shadow: var(--shadow);
   }
+  .step.optional { border-style: dashed; }
   .step-head { display: flex; gap: 14px; align-items: flex-start; }
   .step-num {
     flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
@@ -74,8 +75,13 @@
     display: flex; align-items: center; justify-content: center;
   }
   .step.is-done .step-num { background: var(--accent); color: #fff; }
+  .step-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
   .step-title { font-family: 'Fraunces', serif; font-weight: 600; font-size: 19px; margin: 0 0 3px; }
   .step.is-done .step-title { text-decoration: line-through; text-decoration-color: var(--text-dim); opacity: .6; }
+  .badge-optional {
+    font: 700 10px 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .05em;
+    background: var(--warn-soft); color: var(--warn); padding: 3px 8px; border-radius: 999px;
+  }
   .step-why { color: var(--text-dim); font-size: 13px; line-height: 1.5; margin: 0; }
   .step-body { margin-top: 16px; padding-left: 44px; }
   .step-body ol, .step-body ul { margin: 0 0 14px; padding-left: 20px; color: var(--text); font-size: 14px; line-height: 1.65; }
@@ -99,12 +105,14 @@
     display: flex; flex-direction: column; gap: 5px; flex: 1 1 200px;
   }
   .field label { font: 600 11px 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .04em; color: var(--text-dim); }
-  .field input {
+  .field input, .field select {
     font: 500 13.5px 'IBM Plex Mono', monospace; padding: 10px 12px;
     border: 1px solid var(--border); border-radius: 9px; background: var(--surface-2); color: var(--text);
     width: 100%;
   }
-  .field input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field select { font-family: 'IBM Plex Sans', sans-serif; font-size: 13.5px; cursor: pointer; }
+  .field input:focus-visible, .field select:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field .hint { font-size: 11.5px; color: var(--text-dim); font-family: 'IBM Plex Sans', sans-serif; }
 
   .value-box {
     display: flex; align-items: center; gap: 8px; margin: 4px 0 12px;
@@ -154,10 +162,10 @@
 <div class="wrap">
   <div class="eyebrow">GHO Expenses · One-time setup</div>
   <h1>Get your tracker live</h1>
-  <p class="lede">One link, six short stops. At each one you sign into <b>your own</b> account on that service — nothing here ever asks for a password, and nothing you type is sent to us. By the end you'll have a working link for your team.</p>
+  <p class="lede">Five short stops. At each one you sign into <b>your own</b> account on that service — nothing here ever asks for a password, and nothing you type is sent to us. Steps 1–3 get the app running; step 4 (voice notes + Telegram) is optional and can be done anytime later.</p>
 
   <ul class="rail" id="rail">
-    <li></li><li></li><li></li><li></li><li></li><li></li>
+    <li></li><li></li><li></li><li></li><li></li>
   </ul>
 
   <!-- STEP 1 -->
@@ -175,9 +183,10 @@
         <li>Sign in with Google or email, name the project anything, set a database password — <b>write it down</b>, you'll use it in a moment.</li>
         <li>Pick the region closest to you and click Create. Takes about 2 minutes.</li>
         <li>Once it's ready: left sidebar → <b>Storage</b> → New bucket → name it exactly <code>receipts</code> → turn on <b>Public bucket</b> → Create.</li>
-        <li>Left sidebar → <b>Project Settings → API</b>. Keep this tab open — you'll copy three boxes from here in step 4: <b>Project URL</b>, <b>anon public</b> key, and <b>service_role</b> key.</li>
-        <li>Left sidebar → <b>Project Settings → Database → Connection string → URI</b>. Copy it and replace <code>[YOUR-PASSWORD]</code> in it with the password from step 1.</li>
+        <li>Left sidebar → gear icon (<b>Project Settings</b>) → <b>API Keys</b>. Copy the <b>Project URL</b> at the top. Then copy the key called <b>anon</b> / <b>public</b> (newer projects may call it <b>publishable</b>, starting with <code>sb_publishable_...</code> — same thing, use that). Then click <b>Reveal</b> on the key called <b>service_role</b> (newer projects: <b>secret</b>, starting with <code>sb_secret_...</code>) and copy it too. Keep this tab open, you need all three in step 3.</li>
+        <li>Near the top of the page, click the green <b>Connect</b> button → make sure the connection-string tab is selected → choose <b>Session pooler</b> (not "Transaction pooler", not "Direct connection" — session pooler is the one that won't break when the app builds). Copy the URI shown and replace <code>[YOUR-PASSWORD]</code> in it with the password from step 1.</li>
       </ol>
+      <p class="note">Supabase has been renaming a few things lately — if a label above doesn't match exactly what you see, look for the closest match; the values matter, not the exact wording.</p>
       <div class="done-check">
         <input type="checkbox" id="done-1"><label for="done-1">I've done this</label>
       </div>
@@ -189,25 +198,51 @@
     <div class="step-head">
       <div class="step-num">2</div>
       <div>
-        <p class="step-title">Create your Telegram bot</p>
-        <p class="step-why">This is the bot your team will send voice notes, photos, and texts to.</p>
+        <p class="step-title">Get your OpenRouter key &amp; pick your AI models</p>
+        <p class="step-why">One key runs everything AI-related in this app: reading receipt photos, sorting expenses into categories, understanding typed text, and transcribing voice notes.</p>
       </div>
     </div>
     <div class="step-body">
-      <a class="btn primary" href="https://t.me/BotFather" target="_blank" rel="noopener">Open BotFather in Telegram ↗</a>
-      <ol style="margin-top:16px">
-        <li>Send <code>/newbot</code>, give it any display name, then a username that ends in <code>bot</code> (e.g. <code>my_expenses_bot</code>).</li>
-        <li>BotFather replies with a long token like <code>123456:ABC-...</code> — copy it, you'll need it twice below.</li>
-      </ol>
-      <div class="field">
-        <label for="secret-gen">Now make up a secret phrase</label>
-        <div class="value-box">
-          <input id="secret-gen" type="text" placeholder="click Generate →" readonly>
-          <button class="copy-btn" type="button" onclick="genSecret()">Generate</button>
-          <button class="copy-btn" type="button" onclick="copyField('secret-gen')">Copy</button>
+      <a class="btn primary" href="https://openrouter.ai/keys" target="_blank" rel="noopener">Get key ↗</a>
+      <p class="note warn">It needs a small top-up to actually work — after making the key, go to Settings → Credits and add about $5. That's the only step in this whole setup that costs real money, and it should last months at normal use.</p>
+
+      <div class="field-row" style="margin-top:14px">
+        <div class="field">
+          <label for="textModel">Model for reading text</label>
+          <select id="textModel">
+            <option value="openai/gpt-oss-120b">Fast &amp; cheap</option>
+            <option value="qwen/qwen3-30b-a3b-instruct-2507" selected>Balanced (recommended)</option>
+            <option value="mistralai/mistral-small-24b-instruct-2501">Most accurate</option>
+            <option value="__custom__">Custom — type a model ID</option>
+          </select>
+          <input id="textModelCustom" type="text" placeholder="e.g. anthropic/claude-3.5-haiku" hidden>
+          <span class="hint">Used for typed messages and transcribed voice notes.</span>
+        </div>
+        <div class="field">
+          <label for="visionModel">Model for reading receipt photos</label>
+          <select id="visionModel">
+            <option value="qwen/qwen3.7-flash">Fast &amp; cheap</option>
+            <option value="google/gemma-3-12b-it" selected>Balanced (recommended)</option>
+            <option value="mistralai/mistral-small-3.2-24b-instruct">Most accurate</option>
+            <option value="__custom__">Custom — type a model ID</option>
+          </select>
+          <input id="visionModelCustom" type="text" placeholder="e.g. openai/gpt-5-nano" hidden>
+          <span class="hint">Any current OpenRouter model works — swap it anytime in Vercel's settings.</span>
         </div>
       </div>
-      <p class="note">This is just a made-up password that stops strangers from pretending to be Telegram. Save it — you'll paste it in step 4 and step 5.</p>
+      <div class="field-row" style="margin-top:14px">
+        <div class="field">
+          <label for="transcribeModel">Model for voice notes</label>
+          <select id="transcribeModel">
+            <option value="openai/whisper-large-v3-turbo">Fast &amp; cheap</option>
+            <option value="openai/gpt-4o-mini-transcribe" selected>Balanced (recommended)</option>
+            <option value="openai/gpt-4o-transcribe">Most accurate</option>
+            <option value="__custom__">Custom — type a model ID</option>
+          </select>
+          <input id="transcribeModelCustom" type="text" placeholder="e.g. openai/whisper-1" hidden>
+          <span class="hint">Turns a recorded voice note into text before the model above reads it. Same OpenRouter key — no separate signup needed.</span>
+        </div>
+      </div>
       <div class="done-check">
         <input type="checkbox" id="done-2"><label for="done-2">I've done this</label>
       </div>
@@ -219,36 +254,6 @@
     <div class="step-head">
       <div class="step-num">3</div>
       <div>
-        <p class="step-title">Get your two AI keys</p>
-        <p class="step-why">One reads voice notes, the other reads receipt photos and sorts expenses into categories.</p>
-      </div>
-    </div>
-    <div class="step-body">
-      <div class="grid-2">
-        <div class="mini-card">
-          <h4>Groq</h4>
-          <p>Turns voice notes into text. Free tier is generous, no card needed.</p>
-          <a class="btn secondary" href="https://console.groq.com/keys" target="_blank" rel="noopener">Get free key ↗</a>
-        </div>
-        <div class="mini-card">
-          <h4>OpenRouter</h4>
-          <p>Reads receipt photos and picks a category. Sign in, create a key.</p>
-          <a class="btn secondary" href="https://openrouter.ai/keys" target="_blank" rel="noopener">Get key ↗</a>
-        </div>
-      </div>
-      <p class="note warn">OpenRouter needs a small top-up to actually work — after making the key, go to Settings → Credits and add about $5. That's the only step in this whole setup that costs real money, and it should last months.</p>
-      <p class="note">Once you have both keys copied somewhere, you're ready for step 4.</p>
-      <div class="done-check">
-        <input type="checkbox" id="done-3"><label for="done-3">I've done this</label>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 4 -->
-  <div class="step" data-step="4">
-    <div class="step-head">
-      <div class="step-num">4</div>
-      <div>
         <p class="step-title">Deploy the app</p>
         <p class="step-why">This puts the tracker on the internet, on Vercel's free plan.</p>
       </div>
@@ -257,23 +262,75 @@
       <a class="btn primary big" id="deployBtn" href="#" target="_blank" rel="noopener">Deploy to Vercel ↗</a>
       <ol style="margin-top:16px">
         <li>Sign in to Vercel (Google, GitHub, or email — this is just to prove it's you; you won't see or need to touch any code).</li>
-        <li>It'll show a row of boxes to fill in. Paste in the values you collected in steps 1–3. Here's what each one is:</li>
+        <li>It'll show a row of boxes to fill in. Paste in the values you collected in steps 1–2. Here's what each one is:</li>
       </ol>
       <div class="env-list">
         <b>DATABASE_URL</b> → the connection string, step 1.5<br>
         <b>NEXT_PUBLIC_SUPABASE_URL</b> and <b>SUPABASE_URL</b> → same value, Project URL, step 1.4<br>
-        <b>NEXT_PUBLIC_SUPABASE_ANON_KEY</b> → anon public key, step 1.4<br>
-        <b>SUPABASE_SERVICE_ROLE_KEY</b> → service_role key, step 1.4<br>
+        <b>NEXT_PUBLIC_SUPABASE_ANON_KEY</b> → anon / publishable key, step 1.4<br>
+        <b>SUPABASE_SERVICE_ROLE_KEY</b> → service_role / secret key, step 1.4<br>
         <b>SUPABASE_RECEIPTS_BUCKET</b> → leave as <b>receipts</b><br>
-        <b>TELEGRAM_BOT_TOKEN</b> → from BotFather, step 2<br>
-        <b>TELEGRAM_WEBHOOK_SECRET</b> → your secret phrase, step 2<br>
-        <b>ADMIN_TELEGRAM_IDS</b> → leave blank<br>
-        <b>GROQ_API_KEY</b> → from Groq, step 3<br>
-        <b>OPENROUTER_API_KEY</b> → from OpenRouter, step 3<br>
-        <b>OPENROUTER_TEXT_MODEL</b> / <b>OPENROUTER_VISION_MODEL</b> → leave as filled in<br>
+        <b>OPENROUTER_API_KEY</b> → from OpenRouter, step 2<br>
+        <b>OPENROUTER_TEXT_MODEL</b> / <b>OPENROUTER_VISION_MODEL</b> / <b>OPENROUTER_TRANSCRIBE_MODEL</b> → leave as filled in — these match what you picked in step 2<br>
         <b>MONTHLY_AI_BUDGET_USD</b> → leave as <b>5</b> (raise it later if you need to)
       </div>
-      <p class="note">Click Deploy. It takes 1–2 minutes and sets up the database tables by itself — nothing else to run anywhere. You'll get a link like <code>https://your-app.vercel.app</code> — save it, you need it next.</p>
+      <p class="note">Click Deploy. It takes 1–2 minutes and sets up the database tables by itself — nothing else to run anywhere. You'll get a link like <code>https://your-app.vercel.app</code> — save it, you need it below.</p>
+      <p class="note">The web capture page works right away with photos, typed text, <b>and voice notes</b> — no extra signup needed. The Telegram bot is a separate, optional way in — step 4 below covers it, whenever you're ready. Nothing breaks without it.</p>
+      <div class="done-check">
+        <input type="checkbox" id="done-3"><label for="done-3">I've done this</label>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4 (optional) -->
+  <div class="step optional" data-step="4">
+    <div class="step-head">
+      <div class="step-num">4</div>
+      <div>
+        <div class="step-title-row">
+          <p class="step-title">Add the Telegram bot</p>
+          <span class="badge-optional">Optional · do anytime</span>
+        </div>
+        <p class="step-why">Skip this for now if you like — the app already works with photos, typed text, and voice notes on the capture page. Come back whenever you want your team messaging a bot instead.</p>
+      </div>
+    </div>
+    <div class="step-body">
+      <div class="mini-card">
+        <h4>Telegram bot</h4>
+        <p>Open BotFather, send <code>/newbot</code>, give it a name and a username ending in <code>bot</code>. Copy the token it replies with.</p>
+        <a class="btn secondary" href="https://t.me/BotFather" target="_blank" rel="noopener">Open BotFather ↗</a>
+      </div>
+
+      <div class="field" style="margin-top:14px">
+        <label for="secret-gen">Make up a secret phrase for the bot</label>
+        <div class="value-box">
+          <input id="secret-gen" type="text" placeholder="click Generate →" readonly>
+          <button class="copy-btn" type="button" onclick="genSecret()">Generate</button>
+          <button class="copy-btn" type="button" onclick="copyField('secret-gen')">Copy</button>
+        </div>
+        <span class="hint">A made-up password that stops strangers from pretending to be Telegram.</span>
+      </div>
+
+      <p class="note">Now add these to your already-deployed app: on Vercel, open your project → <b>Settings → Environment Variables</b> → add <b>TELEGRAM_BOT_TOKEN</b> and <b>TELEGRAM_WEBHOOK_SECRET</b> (your secret phrase above) → Save. Then go to the <b>Deployments</b> tab, open the newest one, and click <b>Redeploy</b> so it picks up the new values.</p>
+
+      <p class="note" style="margin-top:16px"><b>Then connect the bot</b> — one click, runs in your own browser, nothing sent anywhere except to Telegram:</p>
+      <div class="field-row">
+        <div class="field">
+          <label for="cbToken">Bot token</label>
+          <input id="cbToken" type="text" placeholder="123456:ABC-...">
+        </div>
+        <div class="field">
+          <label for="cbSecret">Secret phrase</label>
+          <input id="cbSecret" type="text" placeholder="paste it here">
+        </div>
+        <div class="field">
+          <label for="cbAppUrl">Your app link (step 3)</label>
+          <input id="cbAppUrl" type="text" placeholder="your-app.vercel.app">
+        </div>
+      </div>
+      <button class="btn primary" type="button" onclick="connectBot()">Connect →</button>
+      <p class="note">A new tab opens showing something like <code>{"ok":true,...}</code> — that means it worked. If it shows an error instead, double-check the three boxes above and that you redeployed after adding the environment variables.</p>
+      <div id="cbResult" class="result-msg"></div>
       <div class="done-check">
         <input type="checkbox" id="done-4"><label for="done-4">I've done this</label>
       </div>
@@ -285,47 +342,14 @@
     <div class="step-head">
       <div class="step-num">5</div>
       <div>
-        <p class="step-title">Connect your bot to your app</p>
-        <p class="step-why">One click links the two together. This runs in your own browser — nothing is sent anywhere except to Telegram.</p>
-      </div>
-    </div>
-    <div class="step-body">
-      <div class="field-row">
-        <div class="field">
-          <label for="cbToken">Bot token (step 2)</label>
-          <input id="cbToken" type="text" placeholder="123456:ABC-...">
-        </div>
-        <div class="field">
-          <label for="cbSecret">Secret phrase (step 2)</label>
-          <input id="cbSecret" type="text" placeholder="paste it here">
-        </div>
-        <div class="field">
-          <label for="cbAppUrl">Your app link (step 4)</label>
-          <input id="cbAppUrl" type="text" placeholder="your-app.vercel.app">
-        </div>
-      </div>
-      <button class="btn primary" type="button" onclick="connectBot()">Connect →</button>
-      <p class="note">A new tab opens showing something like <code>{"ok":true,...}</code> — that means it worked. If it shows an error instead, double-check the three boxes above.</p>
-      <div id="cbResult" class="result-msg"></div>
-      <div class="done-check">
-        <input type="checkbox" id="done-5"><label for="done-5">I've done this</label>
-      </div>
-    </div>
-  </div>
-
-  <!-- STEP 6 -->
-  <div class="step" data-step="6">
-    <div class="step-head">
-      <div class="step-num">6</div>
-      <div>
         <p class="step-title">You're live</p>
         <p class="step-why">Two links your team will actually use day to day.</p>
       </div>
     </div>
     <div class="step-body">
       <ol>
-        <li>Open Telegram, message your bot <code>/start</code>, then try something like <code>450 diesel</code>. <b>Do this yourself first</b> — the first person to message the bot becomes the admin.</li>
-        <li>Share the capture link below with anyone who doesn't use Telegram — it works in any phone browser, no account needed.</li>
+        <li>If you did step 4: open Telegram, message your bot <code>/start</code>, then try something like <code>450 diesel</code>. <b>Do this yourself first</b> — the first person to message the bot becomes the admin.</li>
+        <li>Share the capture link below with your team — it works in any phone browser, no account needed, and covers photos, typed text, and voice notes right away.</li>
       </ol>
       <div class="final-links">
         <a class="btn secondary" id="loginLink" href="#" target="_blank" rel="noopener">Open your dashboard (sign in with email) ↗</a>
@@ -339,32 +363,59 @@
 </div>
 
 <script>
-  const REPO_URL = 'https://github.com/PLACEHOLDER/gho-expenses'; // set once the source repo exists
+  const REPO_URL = 'https://github.com/imbalki/gho-expenses';
   const ENV_VARS = [
     'DATABASE_URL','NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_URL',
-    'SUPABASE_SERVICE_ROLE_KEY','SUPABASE_RECEIPTS_BUCKET','TELEGRAM_BOT_TOKEN','TELEGRAM_WEBHOOK_SECRET',
-    'ADMIN_TELEGRAM_IDS','GROQ_API_KEY','OPENROUTER_API_KEY','OPENROUTER_TEXT_MODEL','OPENROUTER_VISION_MODEL',
+    'SUPABASE_SERVICE_ROLE_KEY','SUPABASE_RECEIPTS_BUCKET',
+    'OPENROUTER_API_KEY','OPENROUTER_TEXT_MODEL','OPENROUTER_VISION_MODEL','OPENROUTER_TRANSCRIBE_MODEL',
     'MONTHLY_AI_BUDGET_USD'
   ];
-  const ENV_DEFAULTS = {
-    SUPABASE_RECEIPTS_BUCKET: 'receipts',
-    OPENROUTER_TEXT_MODEL: 'deepseek/deepseek-chat',
-    OPENROUTER_VISION_MODEL: 'qwen/qwen-2.5-vl-72b-instruct',
-    MONTHLY_AI_BUDGET_USD: '5'
-  };
+
+  function selectedModel(selectId, customId) {
+    const sel = document.getElementById(selectId);
+    if (sel.value === '__custom__') {
+      const custom = document.getElementById(customId).value.trim();
+      return custom || sel.options[1].value; // fall back to the recommended one if left empty
+    }
+    return sel.value;
+  }
+
+  function currentEnvDefaults() {
+    return {
+      SUPABASE_RECEIPTS_BUCKET: 'receipts',
+      OPENROUTER_TEXT_MODEL: selectedModel('textModel', 'textModelCustom'),
+      OPENROUTER_VISION_MODEL: selectedModel('visionModel', 'visionModelCustom'),
+      OPENROUTER_TRANSCRIBE_MODEL: selectedModel('transcribeModel', 'transcribeModelCustom'),
+      MONTHLY_AI_BUDGET_USD: '5'
+    };
+  }
 
   function buildDeployUrl() {
     const p = new URLSearchParams();
     p.set('repository-url', REPO_URL);
     p.set('env', ENV_VARS.join(','));
-    p.set('envDescription', 'Paste the values you copied from Supabase, Telegram, Groq and OpenRouter in the steps above this button.');
+    p.set('envDescription', 'Paste the values you copied from Supabase and OpenRouter in the steps above this button.');
     p.set('envLink', location.href.split('#')[0]);
-    p.set('envDefaults', JSON.stringify(ENV_DEFAULTS));
+    p.set('envDefaults', JSON.stringify(currentEnvDefaults()));
     p.set('project-name', 'gho-expenses');
     return 'https://vercel.com/new/clone?' + p.toString();
   }
 
-  document.getElementById('deployBtn').href = buildDeployUrl();
+  function refreshDeployUrl() {
+    document.getElementById('deployBtn').href = buildDeployUrl();
+  }
+
+  ['textModel', 'visionModel', 'transcribeModel'].forEach(function (id) {
+    const sel = document.getElementById(id);
+    const customInput = document.getElementById(id + 'Custom');
+    sel.addEventListener('change', function () {
+      customInput.hidden = sel.value !== '__custom__';
+      refreshDeployUrl();
+    });
+    customInput.addEventListener('input', refreshDeployUrl);
+  });
+
+  refreshDeployUrl();
 
   function genSecret() {
     const bytes = new Uint8Array(18);
@@ -418,13 +469,13 @@
   (function () {
     const rail = document.getElementById('rail').children;
     function refreshRail() {
-      for (let i = 1; i <= 6; i++) {
+      for (let i = 1; i <= 5; i++) {
         const done = document.getElementById('done-' + i).checked;
         document.querySelector('.step[data-step="' + i + '"]').classList.toggle('is-done', done);
         rail[i - 1].classList.toggle('done', done);
       }
     }
-    for (let i = 1; i <= 6; i++) {
+    for (let i = 1; i <= 5; i++) {
       const box = document.getElementById('done-' + i);
       try {
         const saved = localStorage.getItem('gho-setup-done-' + i);

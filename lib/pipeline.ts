@@ -47,7 +47,7 @@ export async function processCapture(
     if (input.kind === 'voice') {
       mediaUrl = await uploadCaptureMedia(input.buffer, { extension: 'ogg', contentType: 'audio/ogg', channel: opts.channel });
       rawText = await transcribeAudio(input.buffer, input.filename);
-      await recordAiUsage('groq', 'transcribe', COST_ESTIMATES.transcribe);
+      await recordAiUsage('openrouter', 'transcribe', COST_ESTIMATES.transcribe);
     } else if (input.kind === 'photo') {
       const ext = input.mimeType.split('/')[1] || 'jpg';
       mediaUrl = await uploadCaptureMedia(input.buffer, { extension: ext, contentType: input.mimeType, channel: opts.channel });
